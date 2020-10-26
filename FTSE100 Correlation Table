@@ -1,0 +1,75 @@
+import pandas as pd
+import time
+import datetime as dt
+import matplotlib.pyplot as plt
+import pandas_datareader.data as web
+import numpy as np
+df = pd.read_excel('/Users/nathan/Desktop/FTSE100.xlsx')
+
+Tickers = df['Tickers'].tolist()
+start = dt.datetime(2000,1,1)
+end = dt.datetime(2020,10,1)
+#
+print(Tickers)
+Tickers1 = []
+for i in Tickers:
+    Tickers1.append(i+'.L')
+    
+
+for i in Tickers1:
+
+    df2 = web.DataReader(i,'yahoo', start, end)
+    df2.to_csv(i+'.csv')
+    print(i)
+    main_df = pd.DataFrame()
+   
+def CompileData():
+    main_df = pd.DataFrame()
+
+    for count, ticker in enumerate(Tickers1):
+        df = pd.read_csv(ticker+'.csv')
+        df.set_index('Date', inplace=True)
+
+        df.rename(columns = {'Adj Close': ticker}, inplace=True)
+        df.drop(['Open', 'High', 'Low', 'Close', 'Volume'], 1, inplace = True)
+
+        if main_df.empty:
+            main_df = df
+        else:
+            main_df = main_df.join(df, how = 'outer')
+
+        if count % 10 ==0:
+            print(count)
+
+    print(main_df.head())
+    main_df.to_csv('FTSE100_Joined_Closes.csv')
+
+CompileData()
+
+
+def VisualiseData():
+    df = pd.read_csv('FTSE100_Joined_Closes.csv')
+    df_corr=df.corr()
+    print(df.corr())
+    data = df_corr.values
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+
+    heatmap  = ax.pcolor(data, cmap=plt.cm.RdYlGn)
+    fig.colorbar(heatmap)
+    ax.set_xticks(np.arange(data.shape[0]) + 0.5, minor=False)
+    ax.set_yticks(np.arange(data.shape[1]) + 0.5, minor=False)
+    ax.invert_yaxis()
+    ax.xaxis.tick_top()
+
+    column_labels = df_corr.columns
+    row_labels = df_corr.index
+
+    ax.set_xticklabels(column_labels)
+    ax.set_yticklabels(row_labels)
+    plt.xticks(rotation=90)
+    heatmap.set_clim(-1,1)
+    plt.tight_layout()
+    plt.show()
+
+VisualiseData()   
